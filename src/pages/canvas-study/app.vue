@@ -10,6 +10,8 @@
       <el-radio label="rect">矩形</el-radio>
       <el-radio label="point">标点</el-radio>
     </el-radio-group>
+    <button type="button" class="btn btn-primary" @click="crossLine ? crossLine = false : crossLine = true">标尺</button>
+    {{crossLine}}
     <p>工具属性：</p>
     <span>颜色：</span>
     <el-color-picker v-model="toolsNature.color"></el-color-picker>
@@ -76,6 +78,7 @@ export default {
         color: '#000',
         size: 1
       },
+      crossLine: false,
       drawType: 'rect',
       // 保存图形
       saveDraw: []
@@ -137,6 +140,20 @@ export default {
       ctx.fill()
       ctx.closePath()
     },
+    // 画十字
+    drawCrossline () {
+      let vm = this
+      ctx.beginPath()
+      ctx.moveTo(0, vm.moveClickY)
+      ctx.lineTo(boxWidth, vm.moveClickY)
+      ctx.stroke()
+      ctx.closePath()
+      ctx.beginPath()
+      ctx.moveTo(vm.moveClickX, 0)
+      ctx.lineTo(vm.moveClickX, boxHeight)
+      ctx.stroke()
+      ctx.closePath()
+    },
     // 画布点击事件
     canvasClick (e) {
       let vm = this
@@ -157,6 +174,11 @@ export default {
       var canvas1 = $('#myCanvas')
       vm.moveClickX = event.clientX - canvas1[0].offsetLeft
       vm.moveClickY = event.clientY - canvas1[0].offsetTop
+      vm.drawAgain()
+      ctx.setLineDash([4, 4])
+      if (vm.crossLine) {
+        vm.drawCrossline()
+      }
       if (vm.drageEvent.status === true) {
         console.log('拖拽中')
         distanceX = vm.moveClickX - clickX
@@ -165,13 +187,9 @@ export default {
         var y = distanceY > 0 ? clickY : vm.moveClickY
         var width = Math.abs(distanceX)
         var height = Math.abs(distanceY)
-        // ctx.clearRect(0, 0, boxWidth, boxHeight)
         if (vm.drawType === 'rect' && distanceX !== 0 && distanceY !== 0) {
-          vm.drawAgain()
-          ctx.setLineDash([4, 4])
           vm.strokeRect(x, y, width, height)
         }
-        // ctx.setLineDash([4, 4])
       }
     },
     // 画布停止拖拽
