@@ -151,17 +151,21 @@ export default {
         if (el.type === 'Rect') {
           ctx.setLineDash([el.size, 0])
           vm.strokeRect(el.x, el.y, el.width, el.height, el.color, el.size)
+          vm.drawFont(index, el.x, el.y)
         }
         if (el.type === 'Point') {
           vm.drawPoint(el.x, el.y, el.r, el.color)
+          vm.drawFont(index, el.x + 10, el.y - 10)
         }
         if (el.type === 'Arc') {
           ctx.setLineDash([el.size, 0])
           vm.drawArc(el.x, el.y, el.r, el.color, el.size)
+          vm.drawFont(index, el.x - el.r - 30, el.y)
         }
         if (el.type === 'Ellipse') {
           ctx.setLineDash([el.size, 0])
           vm.drawEllipse(el.x, el.y, el.r1, el.r2, el.color, el.size)
+          vm.drawFont(index, el.x - el.r1 + 10, el.y - el.r2 + 10)
         }
       })
     },
@@ -223,6 +227,11 @@ export default {
       ctx.stroke()
       ctx.closePath()
     },
+    // 文字
+    drawFont (text, x, y) {
+      ctx.font = '30px Georgia'
+      ctx.fillText(text, x, y)
+    },
     // 画布点击事件
     canvasClick (e) {
       let vm = this
@@ -233,6 +242,7 @@ export default {
       this.drageEvent.status = true
       console.log(`clickX${clickX},clickY:${clickY}`)
       if (vm.drawType === 'point') {
+        vm.drawFont(vm.saveDraw.length, clickX + 10, clickY - 10)
         vm.drawPoint(clickX, clickY, this.toolsNature.size)
         vm.saveDraw.push(new Point(clickX, clickY, this.toolsNature.size, this.toolsNature.color))
       }
@@ -302,6 +312,7 @@ export default {
       if (vm.drawType === 'rect' && distanceX !== 0 && distanceY !== 0) {
         ctx.setLineDash([this.toolsNature.size, 0])
         vm.strokeRect(x, y, width, height)
+        vm.drawFont(vm.saveDraw.length, x, y)
         vm.saveDraw.push(new Rect(x, y, width, height, this.toolsNature.color, this.toolsNature.size))
         console.log(vm.saveDraw)
       }
@@ -311,6 +322,7 @@ export default {
         let x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
         let y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
         vm.drawArc(x1, y1, arcR)
+        vm.drawFont(vm.saveDraw.length, x1 - arcR - 30, y1)
         vm.saveDraw.push(new Arc(x1, y1, arcR, this.toolsNature.color, this.toolsNature.size))
       }
       if (vm.drawType === 'ellipse' && distanceX !== 0 && distanceY !== 0) {
@@ -320,6 +332,7 @@ export default {
         let x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
         let y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
         vm.drawEllipse(x2, y2, r1, r2)
+        vm.drawFont(vm.saveDraw.length, x + 10, y + 10)
         vm.saveDraw.push(new Ellipse(x2, y2, r1, r2, this.toolsNature.color, this.toolsNature.size))
       }
       vm.drageEvent.status = false
