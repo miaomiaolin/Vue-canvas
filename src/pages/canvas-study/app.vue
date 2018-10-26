@@ -9,6 +9,8 @@
     <el-radio-group v-model="drawType">
       <el-radio label="rect">矩形</el-radio>
       <el-radio label="point">标点</el-radio>
+      <el-radio label="arc">正圆</el-radio>
+      <el-radio label="ellipse">椭圆</el-radio>
     </el-radio-group>
     <button type="button" class="btn btn-primary" @click="crossLine ? crossLine = false : crossLine = true">标尺</button>
     {{crossLine}}
@@ -57,6 +59,25 @@ function Point (x, y, r, color) {
   this.color = color
 }
 Point.prototype.type = 'Point'
+
+function Arc (x, y, r, color, size) {
+  this.x = x
+  this.y = y
+  this.r = r
+  this.color = color
+  this.size = size
+}
+Arc.prototype.type = 'Arc'
+
+function Ellipse (x, y, r1, r2, color, size) {
+  this.x = x
+  this.y = y
+  this.r1 = r1
+  this.r2 = r2
+  this.color = color
+  this.size = size
+}
+Ellipse.prototype.type = 'Ellipse'
 // 拖拽距离
 var distanceX
 var distanceY
@@ -119,6 +140,14 @@ export default {
         if (el.type === 'Point') {
           vm.drawPoint(el.x, el.y, el.r, el.color)
         }
+        if (el.type === 'Arc') {
+          ctx.setLineDash([el.size, 0])
+          vm.drawArc(el.x, el.y, el.r, el.color, el.size)
+        }
+        if (el.type === 'Ellipse') {
+          ctx.setLineDash([el.size, 0])
+          vm.drawEllipse(el.x, el.y, el.r1, el.r2, el.color, el.size)
+        }
       })
     },
     // 画矩形
@@ -138,6 +167,24 @@ export default {
       ctx.arc(x, y, r, 0, 2 * Math.PI)
       ctx.stroke()
       ctx.fill()
+      ctx.closePath()
+    },
+    // 画圆
+    drawArc (x, y, r, color, size) {
+      ctx.beginPath()
+      ctx.lineWidth = size || this.toolsNature.size
+      ctx.strokeStyle = color || this.toolsNature.color
+      ctx.arc(x, y, r, 0, 2 * Math.PI)
+      ctx.stroke()
+      ctx.closePath()
+    },
+    // 画椭圆
+    drawEllipse (x, y, r1, r2, color, size) {
+      ctx.beginPath()
+      ctx.lineWidth = size || this.toolsNature.size
+      ctx.strokeStyle = color || this.toolsNature.color
+      ctx.ellipse(x, y, r1, r2, 0, 0, 2 * Math.PI)
+      ctx.stroke()
       ctx.closePath()
     },
     // 画十字
@@ -174,12 +221,13 @@ export default {
       var canvas1 = $('#myCanvas')
       vm.moveClickX = event.clientX - canvas1[0].offsetLeft
       vm.moveClickY = event.clientY - canvas1[0].offsetTop
-      vm.drawAgain()
-      ctx.setLineDash([4, 4])
       if (vm.crossLine) {
+        vm.drawAgain()
+        ctx.setLineDash([4, 4])
         vm.drawCrossline()
       }
       if (vm.drageEvent.status === true) {
+        vm.drawAgain()
         console.log('拖拽中')
         distanceX = vm.moveClickX - clickX
         distanceY = vm.moveClickY - clickY
@@ -188,7 +236,25 @@ export default {
         var width = Math.abs(distanceX)
         var height = Math.abs(distanceY)
         if (vm.drawType === 'rect' && distanceX !== 0 && distanceY !== 0) {
+          ctx.setLineDash([4, 4])
           vm.strokeRect(x, y, width, height)
+        }
+        if (vm.drawType === 'arc' && distanceX !== 0 && distanceY !== 0) {
+          ctx.setLineDash([4, 4])
+          var arcR = Math.sqrt(distanceX * distanceX + distanceY * distanceY) / 2
+          var x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
+          var y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
+          vm.drawArc(x1, y1, arcR)
+          console.log(`arcR:${arcR},x:原${x},现${x1},y:原${y},现${y1}`)
+        }
+        if (vm.drawType === 'ellipse' && distanceX !== 0 && distanceY !== 0) {
+          ctx.setLineDash([4, 4])
+          var r1 = width / 2
+          var r2 = height / 2
+          var x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
+          var y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
+          vm.drawEllipse(x2, y2, r1, r2)
+          console.log(`EllipseR:${r1},${r2},x:原${x},现${x2},y:原${y},现${y2}`)
         }
       }
     },
@@ -205,6 +271,23 @@ export default {
         vm.strokeRect(x, y, width, height)
         vm.saveDraw.push(new Rect(x, y, width, height, this.toolsNature.color, this.toolsNature.size))
         console.log(vm.saveDraw)
+      }
+      if (vm.drawType === 'arc' && distanceX !== 0 && distanceY !== 0) {
+        ctx.setLineDash([this.toolsNature.size, 0])
+        var arcR = Math.sqrt(distanceX * distanceX + distanceY * distanceY) / 2
+        var x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
+        var y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
+        vm.drawArc(x1, y1, arcR)
+        vm.saveDraw.push(new Arc(x1, y1, arcR, this.toolsNature.color, this.toolsNature.size))
+      }
+      if (vm.drawType === 'ellipse' && distanceX !== 0 && distanceY !== 0) {
+        ctx.setLineDash([this.toolsNature.size, 0])
+        var r1 = width / 2
+        var r2 = height / 2
+        var x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
+        var y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
+        vm.drawEllipse(x2, y2, r1, r2)
+        vm.saveDraw.push(new Ellipse(x2, y2, r1, r2, this.toolsNature.color, this.toolsNature.size))
       }
       vm.drageEvent.status = false
     }
