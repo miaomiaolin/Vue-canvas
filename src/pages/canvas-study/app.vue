@@ -6,11 +6,13 @@
   </div>
   <div class="position-absolute p-3 text-white" style="width:250px;height:500px;top:60px;left:0;background:rgba(0,0,0,0.5)">
     <p>工具：</p>
-    <el-radio-group v-model="drawType">
-      <el-radio label="rect">矩形</el-radio>
-      <el-radio label="point">标点</el-radio>
-      <el-radio label="arc">正圆</el-radio>
-      <el-radio label="ellipse">椭圆</el-radio>
+    <el-radio-group v-model="drawType" size="small">
+      <el-radio-button label="rect">矩形</el-radio-button>
+      <el-radio-button label="point">标点</el-radio-button>
+      <el-radio-button label="arc">正圆</el-radio-button>
+      <el-radio-button label="ellipse">椭圆</el-radio-button>
+      <el-radio-button label="eraser">橡皮擦</el-radio-button>
+      <el-radio-button label="pencil">画笔工具</el-radio-button>
     </el-radio-group>
     <button type="button" class="btn btn-primary" @click="crossLine ? crossLine = false : crossLine = true">标尺</button>
     {{crossLine}}
@@ -34,9 +36,9 @@ import Header from 'components/header'
 import Footer from 'components/footer'
 import $ from 'jquery'
 
-var ctx
-var clickX = 0
-var clickY = 0
+let ctx
+let clickX = 0
+let clickY = 0
 // 画布宽高
 let boxWidth = 0
 let boxHeight = 0
@@ -79,8 +81,12 @@ function Ellipse (x, y, r1, r2, color, size) {
 }
 Ellipse.prototype.type = 'Ellipse'
 // 拖拽距离
-var distanceX
-var distanceY
+let distanceX
+let distanceY
+
+// 点
+let oldX
+let oldY
 export default {
   name: 'app',
   components: {
@@ -106,7 +112,7 @@ export default {
     }
   },
   mounted: function () {
-    var canvas1 = document.getElementById('myCanvas')
+    const canvas1 = document.getElementById('myCanvas')
     ctx = canvas1.getContext('2d')
     // canvas1的宽高等于外盒子的宽高
     const box = $('#canvasBox')
@@ -120,6 +126,15 @@ export default {
     clearCanvas () {
       ctx.clearRect(0, 0, boxWidth, boxHeight)
       this.saveDraw = []
+    },
+    // 橡皮工具
+    eraser (x, y, size) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(x, y, size, 0, Math.PI * 2, false)
+      ctx.clip()
+      ctx.clearRect(0, 0, boxWidth, boxHeight)
+      ctx.restore()
     },
     // 撤销
     revoke () {
@@ -201,10 +216,17 @@ export default {
       ctx.stroke()
       ctx.closePath()
     },
+    pencil (x, y, x1, y1) {
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+      ctx.lineTo(x1, y1)
+      ctx.stroke()
+      ctx.closePath()
+    },
     // 画布点击事件
     canvasClick (e) {
       let vm = this
-      var canvas1 = $('#myCanvas')
+      const canvas1 = $('#myCanvas')
       console.log(canvas1)
       clickX = event.clientX - canvas1[0].offsetLeft
       clickY = event.clientY - canvas1[0].offsetTop
@@ -218,7 +240,7 @@ export default {
     // 画布中鼠标移动
     drag (e) {
       let vm = this
-      var canvas1 = $('#myCanvas')
+      const canvas1 = $('#myCanvas')
       vm.moveClickX = event.clientX - canvas1[0].offsetLeft
       vm.moveClickY = event.clientY - canvas1[0].offsetTop
       if (vm.crossLine) {
@@ -227,44 +249,55 @@ export default {
         vm.drawCrossline()
       }
       if (vm.drageEvent.status === true) {
-        vm.drawAgain()
         console.log('拖拽中')
         distanceX = vm.moveClickX - clickX
         distanceY = vm.moveClickY - clickY
-        var x = distanceX > 0 ? clickX : vm.moveClickX
-        var y = distanceY > 0 ? clickY : vm.moveClickY
-        var width = Math.abs(distanceX)
-        var height = Math.abs(distanceY)
+        let x = distanceX > 0 ? clickX : vm.moveClickX
+        let y = distanceY > 0 ? clickY : vm.moveClickY
+        let width = Math.abs(distanceX)
+        let height = Math.abs(distanceY)
+        if (vm.drawType === 'eraser') {
+          vm.eraser(vm.moveClickX, vm.moveClickY, this.toolsNature.size * 2)
+        }
+        if (vm.drawType === 'pencil') {
+          oldX = oldX || clickX
+          oldY = oldY || clickY
+          vm.pencil(oldX, oldY, vm.moveClickX, vm.moveClickY)
+          oldX = vm.moveClickX
+          oldY = vm.moveClickY
+          console.log('pencil')
+        }
         if (vm.drawType === 'rect' && distanceX !== 0 && distanceY !== 0) {
+          vm.drawAgain()
           ctx.setLineDash([4, 4])
           vm.strokeRect(x, y, width, height)
         }
         if (vm.drawType === 'arc' && distanceX !== 0 && distanceY !== 0) {
+          vm.drawAgain()
           ctx.setLineDash([4, 4])
-          var arcR = Math.sqrt(distanceX * distanceX + distanceY * distanceY) / 2
-          var x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
-          var y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
+          let arcR = Math.sqrt(distanceX * distanceX + distanceY * distanceY) / 2
+          let x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
+          let y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
           vm.drawArc(x1, y1, arcR)
-          console.log(`arcR:${arcR},x:原${x},现${x1},y:原${y},现${y1}`)
         }
         if (vm.drawType === 'ellipse' && distanceX !== 0 && distanceY !== 0) {
+          vm.drawAgain()
           ctx.setLineDash([4, 4])
-          var r1 = width / 2
-          var r2 = height / 2
-          var x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
-          var y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
+          let r1 = width / 2
+          let r2 = height / 2
+          let x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
+          let y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
           vm.drawEllipse(x2, y2, r1, r2)
-          console.log(`EllipseR:${r1},${r2},x:原${x},现${x2},y:原${y},现${y2}`)
         }
       }
     },
     // 画布停止拖拽
     stopDrag () {
       let vm = this
-      var x = distanceX > 0 ? clickX : vm.moveClickX
-      var y = distanceY > 0 ? clickY : vm.moveClickY
-      var width = Math.abs(distanceX)
-      var height = Math.abs(distanceY)
+      let x = distanceX > 0 ? clickX : vm.moveClickX
+      let y = distanceY > 0 ? clickY : vm.moveClickY
+      let width = Math.abs(distanceX)
+      let height = Math.abs(distanceY)
       console.log(x)
       if (vm.drawType === 'rect' && distanceX !== 0 && distanceY !== 0) {
         ctx.setLineDash([this.toolsNature.size, 0])
@@ -274,22 +307,26 @@ export default {
       }
       if (vm.drawType === 'arc' && distanceX !== 0 && distanceY !== 0) {
         ctx.setLineDash([this.toolsNature.size, 0])
-        var arcR = Math.sqrt(distanceX * distanceX + distanceY * distanceY) / 2
-        var x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
-        var y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
+        let arcR = Math.sqrt(distanceX * distanceX + distanceY * distanceY) / 2
+        let x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
+        let y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
         vm.drawArc(x1, y1, arcR)
         vm.saveDraw.push(new Arc(x1, y1, arcR, this.toolsNature.color, this.toolsNature.size))
       }
       if (vm.drawType === 'ellipse' && distanceX !== 0 && distanceY !== 0) {
         ctx.setLineDash([this.toolsNature.size, 0])
-        var r1 = width / 2
-        var r2 = height / 2
-        var x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
-        var y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
+        let r1 = width / 2
+        let r2 = height / 2
+        let x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
+        let y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
         vm.drawEllipse(x2, y2, r1, r2)
         vm.saveDraw.push(new Ellipse(x2, y2, r1, r2, this.toolsNature.color, this.toolsNature.size))
       }
       vm.drageEvent.status = false
+      distanceX = 0
+      distanceY = 0
+      oldX = 0
+      oldY = 0
     }
   }
 }
