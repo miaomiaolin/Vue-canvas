@@ -1,33 +1,45 @@
 <template>
 <div class="main">
-  <Header/>
-  <div id="canvasBox" class="container d-flex align-items-stretch">
-    <canvas id="myCanvas" style="background: #ccc" @mousedown="canvasClick" @mousemove="drag" @mouseup="stopDrag"></canvas>
-  </div>
-  <div class="position-absolute p-3 text-white" style="width:250px;height:500px;top:60px;left:0;background:rgba(0,0,0,0.5)">
-    <p>工具：</p>
-    <el-radio-group v-model="drawType" size="small">
-      <el-radio-button label="rect">矩形</el-radio-button>
-      <el-radio-button label="point">标点</el-radio-button>
-      <el-radio-button label="arc">正圆</el-radio-button>
-      <el-radio-button label="ellipse">椭圆</el-radio-button>
-      <el-radio-button label="eraser">橡皮擦</el-radio-button>
-      <el-radio-button label="pencil">画笔工具</el-radio-button>
-    </el-radio-group>
-    <button type="button" class="btn btn-primary" @click="crossLine ? crossLine = false : crossLine = true">标尺</button>
-    {{crossLine}}
-    <p>工具属性：</p>
-    <span>颜色：</span>
+  <!-- <Header/> -->
+  <div class="w-100 d-flex align-items-center text-white" style="height: 10%; background:#2f2f2c">
+    <div class="h3 ml-3">study</div>
+    <span class="ml-3">颜色：</span>
     <el-color-picker v-model="toolsNature.color"></el-color-picker>
-    <p>线条粗细或点的大小:</p>
-    <el-slider v-model="toolsNature.size" :min="1" :max="8"></el-slider>
-    <p>操作：</p>
-    <button type="button" class="btn btn-primary" @click="clearCanvas">清除画布</button>
-    <button type="button" class="btn btn-primary" @click="revoke">撤销</button>
-    <p class="pt-3">位置：<span class="pr-2">x:{{moveClickX}}</span>,<span class="pl-2">y:{{moveClickY}}</span></p>
-    <!-- <button type="button" class="btn btn-primary">Primary</button> -->
+    <span class="ml-3">线条粗细或点的大小:</span>
+    <el-slider class="d-inline-block pl-3" v-model="toolsNature.size" :min="1" :max="8" style="width:200px"></el-slider>
+    <span class="ml-3">标尺：</span>
+    <button type="button" class="btn btn-primary btn-sm" @click="crossLine ? crossLine = false : crossLine = true">启用</button>{{crossLine}}
+    <span class="ml-3">正圆：</span>
+    <button type="button" class="btn btn-primary btn-sm" @click="selectTools('arc')">正圆</button>
   </div>
-  <Footer/>
+  <div class="w-100 d-flex" style="height: 85%">
+    <div class="p-3 text-white" style="display: flex;background:#2f2f2c;flex-direction: column;">
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('select')"><i class="fa fa-mouse-pointer fa-2x"></i></button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('rect')"><i class="fa fa-object-ungroup fa-2x"></i></button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('point')"><i class="fa fa-crosshairs fa-2x"></i></button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('ellipse')"><i class="fa fa-circle fa-2x"></i></button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('eraser')"><i class="fa fa-eraser fa-2x"></i></button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('pencil')"><i class="fa fa-paint-brush fa-2x"></i></button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('bezierlines')"><i class="fa fa-pencil-square-o fa-2x"></i></button>
+    </div>
+    <div id="canvasBox" class="w-100 d-flex align-items-stretch p-0" style="flex: 1;border: 1px solid #666">
+      <canvas id="myCanvas" style="background: #3f3f3c" @mousedown="canvasClick" @mousemove="drag" @mouseup="stopDrag"></canvas>
+    </div>
+    <div class="p-3 text-white" style="width:250px;background:#2f2f2c">
+      <p>元素图层：</p>
+      <div style="max-height: 300px;overflow-y: auto">
+        <div class="p-2 mb-1 rounded" style="background:#3f3f3c" v-for="(item, index) in saveDraw" :key="index">
+          {{index}}.{{saveDraw[index].type}}
+          <button type="button" class="btn btn-link" @click="delItem(index)"><i class="fa fa-trash-o"></i></button>
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary" @click="clearCanvas"><i class="fa fa-reply-all"></i></button>
+      <button type="button" class="btn btn-primary" @click="revoke"><i class="fa fa-reply"></i></button>
+    </div>
+  </div>
+  <div class="w-100 text-white" style="height: 5%; background:#2f2f2c">
+    <p>位置：<span class="pr-2">x:{{moveClickX}}</span>,<span class="pl-2">y:{{moveClickY}}</span></p>
+  </div>
 </div>
 </template>
 
@@ -87,6 +99,7 @@ let distanceY
 // 点
 let oldX
 let oldY
+let bezier = []
 export default {
   name: 'app',
   components: {
@@ -102,11 +115,11 @@ export default {
         status: false
       },
       toolsNature: {
-        color: '#000',
+        color: '#f00',
         size: 1
       },
       crossLine: false,
-      drawType: 'rect',
+      drawType: 'select',
       // 保存图形
       saveDraw: []
     }
@@ -120,8 +133,17 @@ export default {
     boxHeight = box[0].clientHeight
     canvas1.width = boxWidth
     canvas1.height = boxHeight
+    // switch (this.drawType) {
+    //   case 'bezierlines':
+    //     this.drawBezierlines2()
+    //     break
+    // }
   },
   methods: {
+    // 选择工具
+    selectTools (val) {
+      this.drawType = val
+    },
     // 清除画布
     clearCanvas () {
       ctx.clearRect(0, 0, boxWidth, boxHeight)
@@ -135,6 +157,11 @@ export default {
       ctx.clip()
       ctx.clearRect(0, 0, boxWidth, boxHeight)
       ctx.restore()
+    },
+    // 删除元素
+    delItem (index) {
+      this.saveDraw.splice(index, 1)
+      this.drawAgain()
     },
     // 撤销
     revoke () {
@@ -220,6 +247,7 @@ export default {
       ctx.stroke()
       ctx.closePath()
     },
+    // 画笔工具
     pencil (x, y, x1, y1) {
       ctx.beginPath()
       ctx.moveTo(x, y)
@@ -227,6 +255,43 @@ export default {
       ctx.stroke()
       ctx.closePath()
     },
+    // 贝塞尔曲线
+    drawBezierlines (x0, y0, sx, sy, ex, ey, x1, y1) {
+      this.drawPoint(x0, y0, 4)
+      ctx.beginPath()
+      ctx.moveTo(x0, y0)
+      ctx.bezierCurveTo(sx, sy, ex, ey, x1, y1)
+      ctx.stroke()
+      ctx.closePath()
+      this.drawPoint(x1, y1, 4)
+    },
+    // 贝塞尔曲线
+    // drawBezierlines2 () {
+    //   const canvas = document.getElementById('myCanvas')
+    //   canvas.onmousedown = function (ev) {
+    //     // let ev = ev || event
+    //     let x = event.clientX - canvas.offsetLeft
+    //     let y = event.clientY - canvas.offsetTop
+    //     ctx.beginPath()
+    //     bezier.push({x: x, y: y})
+    //     this.drawPoint(bezier[0].x, bezier[0].y, 4)
+    //     if (bezier.length > 1) {
+    //       this.drawPoint(bezier[1].x, bezier[1].y, 4)
+    //       ctx.moveTo(bezier[0].x, bezier[0].y)
+    //     }
+    //     document.onmousemove = function (ev) {
+    //       // let ev = ev || event
+    //       let mX = event.clientX - canvas.offsetLeft
+    //       let mY = event.clientY - canvas.offsetTop
+    //       ctx.bezierCurveTo(bezier[0].x, bezier[0].y, mX, mY, bezier[1].y)
+    //       ctx.stroke()
+    //     }
+    //     document.onmouseup = function (ev) {
+    //       document.onmousemove = document.onmouseup = null
+    //       ctx.closePath()
+    //     }
+    //   }
+    // },
     // 文字
     drawFont (text, x, y) {
       ctx.font = '30px Georgia'
@@ -335,6 +400,14 @@ export default {
         vm.drawFont(vm.saveDraw.length, x + 10, y + 10)
         vm.saveDraw.push(new Ellipse(x2, y2, r1, r2, this.toolsNature.color, this.toolsNature.size))
       }
+      if (vm.drawType === 'bezierlines') {
+        console.log('bezier')
+        bezier.push({x: clickX, y: clickY})
+        if (bezier.length > 1) {
+          vm.drawBezierlines(bezier[0].x, bezier[0].y, bezier[0].x, bezier[0].y, bezier[1].x, bezier[1].y, bezier[1].x, bezier[1].y)
+          bezier = []
+        }
+      }
       vm.drageEvent.status = false
       distanceX = 0
       distanceY = 0
@@ -346,4 +419,7 @@ export default {
 </script>
 
 <style>
+html, body, .main {
+  height: 100%;
+}
 </style>
