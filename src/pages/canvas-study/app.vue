@@ -42,7 +42,7 @@
     <div class="p-3 text-white" style="width:250px;background:#2f2f2c">
       <p>元素图层：</p>
       <div class="mb-3" style="height: 300px;overflow-y: auto">
-        <div class="p-2 mb-1 rounded" style="background:#3f3f3c" v-for="(item, index) in saveDraw" :key="index">
+        <div class="p-2 mb-1 rounded" :class="select.index===index?'border border-primary':''" style="background:#3f3f3c" v-for="(item, index) in saveDraw" :key="index">
           {{index}}.{{saveDraw[index].type}}
           <button type="button" class="btn btn-link" @click="delItem(index)"><i class="fa fa-trash-o"></i></button>
         </div>
@@ -168,9 +168,7 @@ export default {
       drawType: 'select',
       select: {
         color: '',
-        index: '',
-        status: false,
-        item: {}
+        index: ''
       },
       // 保存图形
       saveDraw: []
@@ -192,13 +190,6 @@ export default {
       this.drawType = val
     },
     // 选中
-    // selectItem (x0, y0) {
-    //   let vm = this
-    //   let arr = vm.saveDraw
-    //   for (let i = 0; i < arr.length; i++) {
-    //     console.log(arr[i].select(x0, y0))
-    //   }
-    // },
     selectItem () {
       let vm = this
       for (let i = vm.saveDraw.length - 1; i >= 0; i--) {
@@ -370,32 +361,6 @@ export default {
       }
       if (vm.drawType === 'select') {
         vm.selectItem()
-        // for (let i = 0; i < vm.saveDraw.length; i++) {
-        //   if (vm.saveDraw[i].select && vm.saveDraw[i].select(clickX, clickY)) {
-        //     console.log(vm.saveDraw[i])
-        //     if (vm.select.index === '') {
-        //       vm.select.color = vm.saveDraw[i].color
-        //       vm.saveDraw[i].color = '#000'
-        //       vm.select.index = i
-        //       vm.drawAgain()
-        //     } else {
-        //       vm.saveDraw[vm.select.index].color = vm.select.color
-        //       vm.select.color = vm.saveDraw[i].color
-        //       vm.saveDraw[i].color = '#000'
-        //       vm.select.index = i
-        //       vm.drawAgain()
-        //     }
-        //     return
-        //   } else {
-        //     if (vm.select.index !== '') {
-        //       vm.saveDraw[vm.select.index].color = vm.select.color
-        //       console.log(vm.saveDraw[vm.select.index])
-        //       vm.select.index = ''
-        //       vm.select.color = ''
-        //       vm.drawAgain()
-        //     }
-        //   }
-        // }
       }
     },
     // 画布中鼠标移动
@@ -430,12 +395,10 @@ export default {
         }
         if (vm.drawType === 'rect' && distanceX !== 0 && distanceY !== 0) {
           vm.drawAgain()
-          ctx.setLineDash([4, 4])
           vm.strokeRect(x, y, width, height)
         }
         if (vm.drawType === 'arc' && distanceX !== 0 && distanceY !== 0) {
           vm.drawAgain()
-          ctx.setLineDash([4, 4])
           let arcR = Math.sqrt(distanceX * distanceX + distanceY * distanceY) / 2
           let x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
           let y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
@@ -443,7 +406,6 @@ export default {
         }
         if (vm.drawType === 'ellipse' && distanceX !== 0 && distanceY !== 0) {
           vm.drawAgain()
-          ctx.setLineDash([4, 4])
           let r1 = width / 2
           let r2 = height / 2
           let x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
@@ -473,14 +435,12 @@ export default {
       let height = Math.abs(distanceY)
       console.log(x)
       if (vm.drawType === 'rect' && distanceX !== 0 && distanceY !== 0) {
-        ctx.setLineDash([this.toolsNature.size, 0])
         vm.strokeRect(x, y, width, height)
         vm.drawFont(vm.saveDraw.length, x, y)
         vm.saveDraw.push(new Rect(x, y, width, height, this.toolsNature.color, this.toolsNature.size))
         console.log(vm.saveDraw)
       }
       if (vm.drawType === 'arc' && distanceX !== 0 && distanceY !== 0) {
-        ctx.setLineDash([this.toolsNature.size, 0])
         let arcR = Math.sqrt(distanceX * distanceX + distanceY * distanceY) / 2
         let x1 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
         let y1 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
@@ -489,7 +449,6 @@ export default {
         vm.saveDraw.push(new Arc(x1, y1, arcR, this.toolsNature.color, this.toolsNature.size))
       }
       if (vm.drawType === 'ellipse' && distanceX !== 0 && distanceY !== 0) {
-        ctx.setLineDash([this.toolsNature.size, 0])
         let r1 = width / 2
         let r2 = height / 2
         let x2 = distanceX > 0 ? clickX + distanceX / 2 : vm.moveClickX - distanceX / 2
