@@ -2,7 +2,7 @@
 <div class="main">
   <!-- <Header/> -->
   <div class="w-100 d-flex align-items-center text-white" style="height: 10%; background:#2f2f2c">
-    <div class="h3 ml-3">study</div>
+    <div class="h3 ml-3" id="demo">study</div>
     <span class="ml-3">颜色：</span>
     <el-color-picker v-model="toolsNature.color"></el-color-picker>
     <span class="ml-3">线条粗细或点的大小:</span>
@@ -14,20 +14,34 @@
   </div>
   <div class="w-100 d-flex" style="height: 85%">
     <div class="p-3 text-white" style="display: flex;background:#2f2f2c;flex-direction: column;">
-      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('select')"><i class="fa fa-mouse-pointer fa-2x"></i></button>
-      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('rect')"><i class="fa fa-object-ungroup fa-2x"></i></button>
-      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('point')"><i class="fa fa-crosshairs fa-2x"></i></button>
-      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('ellipse')"><i class="fa fa-circle fa-2x"></i></button>
-      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('eraser')"><i class="fa fa-eraser fa-2x"></i></button>
-      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('pencil')"><i class="fa fa-paint-brush fa-2x"></i></button>
-      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('bezierlines')"><i class="fa fa-pencil-square-o fa-2x"></i></button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('select')" :style="drawType === 'select' ? 'color: #0cf' : 'color: #ccc'">
+        <i class="fa fa-mouse-pointer" style="font-size: 25px"></i>
+      </button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('rect')" :style="drawType === 'rect' ? 'color: #0cf' : 'color: #ccc'">
+        <i class="fa fa-object-ungroup" style="font-size: 25px"></i>
+      </button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('point')" :style="drawType === 'point' ? 'color: #0cf' : 'color: #ccc'">
+        <i class="fa fa-crosshairs" style="font-size: 32px"></i>
+      </button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('ellipse')" :style="drawType === 'ellipse' ? 'color: #0cf' : 'color: #ccc'">
+        <i class="fa fa-circle" style="font-size: 28px"></i>
+      </button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('eraser')" :style="drawType === 'eraser' ? 'color: #0cf' : 'color: #ccc'">
+        <i class="fa fa-eraser" style="font-size: 28px"></i>
+      </button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('pencil')" :style="drawType === 'pencil' ? 'color: #0cf' : 'color: #ccc'">
+        <i class="fa fa-paint-brush" style="font-size: 28px"></i>
+      </button>
+      <button type="button" class="btn btn-link btn-sm mb-2" @click="selectTools('bezierlines')" :style="drawType === 'bezierlines' ? 'color: #0cf' : 'color: #ccc'">
+        <i class="fa fa-pencil-square-o" style="font-size: 30px"></i>
+      </button>
     </div>
     <div id="canvasBox" class="w-100 d-flex align-items-stretch p-0" style="flex: 1;border: 1px solid #666">
       <canvas id="myCanvas" style="background: #3f3f3c" @mousedown="canvasClick" @mousemove="drag" @mouseup="stopDrag"></canvas>
     </div>
     <div class="p-3 text-white" style="width:250px;background:#2f2f2c">
       <p>元素图层：</p>
-      <div style="max-height: 300px;overflow-y: auto">
+      <div class="mb-3" style="height: 300px;overflow-y: auto">
         <div class="p-2 mb-1 rounded" style="background:#3f3f3c" v-for="(item, index) in saveDraw" :key="index">
           {{index}}.{{saveDraw[index].type}}
           <button type="button" class="btn btn-link" @click="delItem(index)"><i class="fa fa-trash-o"></i></button>
@@ -63,6 +77,13 @@ function Rect (x, y, width, height, color, size) {
   this.height = height
   this.color = color
   this.size = size
+  this.select = (x0, y0) => {
+    if (x <= x0 && x0 <= x + width && y <= y0 && y0 <= y + height) {
+      return true
+    } else {
+      return false
+    }
+  }
 }
 Rect.prototype.type = 'Rect'
 
@@ -71,6 +92,14 @@ function Point (x, y, r, color) {
   this.y = y
   this.r = r
   this.color = color
+  this.select = (x0, y0) => {
+    let position = Math.pow(x0 - x, 2) + Math.pow(y0 - y, 2)
+    if (position <= Math.pow(r, 2)) {
+      return true
+    } else {
+      return false
+    }
+  }
 }
 Point.prototype.type = 'Point'
 
@@ -80,6 +109,14 @@ function Arc (x, y, r, color, size) {
   this.r = r
   this.color = color
   this.size = size
+  this.select = (x0, y0) => {
+    let position = Math.pow(x0 - x, 2) + Math.pow(y0 - y, 2)
+    if (position <= Math.pow(r, 2)) {
+      return true
+    } else {
+      return false
+    }
+  }
 }
 Arc.prototype.type = 'Arc'
 
@@ -90,6 +127,15 @@ function Ellipse (x, y, r1, r2, color, size) {
   this.r2 = r2
   this.color = color
   this.size = size
+  this.select = (x0, y0) => {
+    let position1 = Math.pow(x0 - x, 2) / Math.pow(r1, 2)
+    let position2 = Math.pow(y0 - y, 2) / Math.pow(r2, 2)
+    if (position1 + position2 <= 1) {
+      return true
+    } else {
+      return false
+    }
+  }
 }
 Ellipse.prototype.type = 'Ellipse'
 // 拖拽距离
@@ -120,6 +166,12 @@ export default {
       },
       crossLine: false,
       drawType: 'select',
+      select: {
+        color: '',
+        index: '',
+        status: false,
+        item: {}
+      },
       // 保存图形
       saveDraw: []
     }
@@ -133,16 +185,48 @@ export default {
     boxHeight = box[0].clientHeight
     canvas1.width = boxWidth
     canvas1.height = boxHeight
-    // switch (this.drawType) {
-    //   case 'bezierlines':
-    //     this.drawBezierlines2()
-    //     break
-    // }
   },
   methods: {
     // 选择工具
     selectTools (val) {
       this.drawType = val
+    },
+    // 选中
+    // selectItem (x0, y0) {
+    //   let vm = this
+    //   let arr = vm.saveDraw
+    //   for (let i = 0; i < arr.length; i++) {
+    //     console.log(arr[i].select(x0, y0))
+    //   }
+    // },
+    selectItem () {
+      let vm = this
+      for (let i = vm.saveDraw.length - 1; i >= 0; i--) {
+        if (vm.saveDraw[i].select && vm.saveDraw[i].select(clickX, clickY)) {
+          console.log(vm.saveDraw[i])
+          if (vm.select.index === '') {
+            vm.select.color = vm.saveDraw[i].color
+            vm.saveDraw[i].color = '#000'
+            vm.select.index = i
+            vm.drawAgain()
+          } else {
+            vm.saveDraw[vm.select.index].color = vm.select.color
+            vm.select.color = vm.saveDraw[i].color
+            vm.saveDraw[i].color = '#000'
+            vm.select.index = i
+            vm.drawAgain()
+          }
+          return
+        } else {
+          if (vm.select.index !== '') {
+            vm.saveDraw[vm.select.index].color = vm.select.color
+            console.log(vm.saveDraw[vm.select.index])
+            vm.select.index = ''
+            vm.select.color = ''
+            vm.drawAgain()
+          }
+        }
+      }
     },
     // 清除画布
     clearCanvas () {
@@ -265,33 +349,6 @@ export default {
       ctx.closePath()
       this.drawPoint(x1, y1, 4)
     },
-    // 贝塞尔曲线
-    // drawBezierlines2 () {
-    //   const canvas = document.getElementById('myCanvas')
-    //   canvas.onmousedown = function (ev) {
-    //     // let ev = ev || event
-    //     let x = event.clientX - canvas.offsetLeft
-    //     let y = event.clientY - canvas.offsetTop
-    //     ctx.beginPath()
-    //     bezier.push({x: x, y: y})
-    //     this.drawPoint(bezier[0].x, bezier[0].y, 4)
-    //     if (bezier.length > 1) {
-    //       this.drawPoint(bezier[1].x, bezier[1].y, 4)
-    //       ctx.moveTo(bezier[0].x, bezier[0].y)
-    //     }
-    //     document.onmousemove = function (ev) {
-    //       // let ev = ev || event
-    //       let mX = event.clientX - canvas.offsetLeft
-    //       let mY = event.clientY - canvas.offsetTop
-    //       ctx.bezierCurveTo(bezier[0].x, bezier[0].y, mX, mY, bezier[1].y)
-    //       ctx.stroke()
-    //     }
-    //     document.onmouseup = function (ev) {
-    //       document.onmousemove = document.onmouseup = null
-    //       ctx.closePath()
-    //     }
-    //   }
-    // },
     // 文字
     drawFont (text, x, y) {
       ctx.font = '30px Georgia'
@@ -310,6 +367,35 @@ export default {
         vm.drawFont(vm.saveDraw.length, clickX + 10, clickY - 10)
         vm.drawPoint(clickX, clickY, this.toolsNature.size)
         vm.saveDraw.push(new Point(clickX, clickY, this.toolsNature.size, this.toolsNature.color))
+      }
+      if (vm.drawType === 'select') {
+        vm.selectItem()
+        // for (let i = 0; i < vm.saveDraw.length; i++) {
+        //   if (vm.saveDraw[i].select && vm.saveDraw[i].select(clickX, clickY)) {
+        //     console.log(vm.saveDraw[i])
+        //     if (vm.select.index === '') {
+        //       vm.select.color = vm.saveDraw[i].color
+        //       vm.saveDraw[i].color = '#000'
+        //       vm.select.index = i
+        //       vm.drawAgain()
+        //     } else {
+        //       vm.saveDraw[vm.select.index].color = vm.select.color
+        //       vm.select.color = vm.saveDraw[i].color
+        //       vm.saveDraw[i].color = '#000'
+        //       vm.select.index = i
+        //       vm.drawAgain()
+        //     }
+        //     return
+        //   } else {
+        //     if (vm.select.index !== '') {
+        //       vm.saveDraw[vm.select.index].color = vm.select.color
+        //       console.log(vm.saveDraw[vm.select.index])
+        //       vm.select.index = ''
+        //       vm.select.color = ''
+        //       vm.drawAgain()
+        //     }
+        //   }
+        // }
       }
     },
     // 画布中鼠标移动
@@ -364,6 +450,18 @@ export default {
           let y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
           vm.drawEllipse(x2, y2, r1, r2)
         }
+        // if (vm.drawType === 'select') {
+        //   for (let i = 0; i < vm.saveDraw.length; i++) {
+        //     if (vm.saveDraw[i].select(clickX, clickY)) {
+        //       let selX = clickX - vm.moveClickX
+        //       let selY = clickY - vm.moveClickY
+        //       console.log('selX:' + selX, 'selY:' + selY)
+        //       vm.saveDraw[i].x = vm.select.item.x - selX
+        //       vm.saveDraw[i].y = vm.select.item.y - selY
+        //       vm.drawAgain()
+        //     }
+        //   }
+        // }
       }
     },
     // 画布停止拖拽
