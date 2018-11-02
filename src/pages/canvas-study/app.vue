@@ -168,7 +168,8 @@ export default {
       drawType: 'select',
       select: {
         color: '',
-        index: ''
+        index: '',
+        position: []
       },
       // 保存图形
       saveDraw: []
@@ -192,17 +193,19 @@ export default {
     // 选中
     selectItem () {
       let vm = this
-      for (let i = vm.saveDraw.length - 1; i >= 0; i--) {
+      for (let i = 0; i < vm.saveDraw.length; i++) {
         if (vm.saveDraw[i].select && vm.saveDraw[i].select(clickX, clickY)) {
           console.log(vm.saveDraw[i])
           if (vm.select.index === '') {
             vm.select.color = vm.saveDraw[i].color
+            vm.select.position = [vm.saveDraw[i].x, vm.saveDraw[i].y]
             vm.saveDraw[i].color = '#000'
             vm.select.index = i
             vm.drawAgain()
           } else {
             vm.saveDraw[vm.select.index].color = vm.select.color
             vm.select.color = vm.saveDraw[i].color
+            vm.select.position = [vm.saveDraw[i].x, vm.saveDraw[i].y]
             vm.saveDraw[i].color = '#000'
             vm.select.index = i
             vm.drawAgain()
@@ -212,6 +215,7 @@ export default {
           if (vm.select.index !== '') {
             vm.saveDraw[vm.select.index].color = vm.select.color
             console.log(vm.saveDraw[vm.select.index])
+            vm.select.position = []
             vm.select.index = ''
             vm.select.color = ''
             vm.drawAgain()
@@ -412,18 +416,15 @@ export default {
           let y2 = distanceY > 0 ? clickY + distanceY / 2 : vm.moveClickY - distanceY / 2
           vm.drawEllipse(x2, y2, r1, r2)
         }
-        // if (vm.drawType === 'select') {
-        //   for (let i = 0; i < vm.saveDraw.length; i++) {
-        //     if (vm.saveDraw[i].select(clickX, clickY)) {
-        //       let selX = clickX - vm.moveClickX
-        //       let selY = clickY - vm.moveClickY
-        //       console.log('selX:' + selX, 'selY:' + selY)
-        //       vm.saveDraw[i].x = vm.select.item.x - selX
-        //       vm.saveDraw[i].y = vm.select.item.y - selY
-        //       vm.drawAgain()
-        //     }
-        //   }
-        // }
+        if (vm.drawType === 'select') {
+          if (vm.select.index !== '') {
+            let sx = clickX - vm.moveClickX
+            let sy = clickY - vm.moveClickY
+            vm.saveDraw[vm.select.index].x = vm.select.position[0] - sx
+            vm.saveDraw[vm.select.index].y = vm.select.position[1] - sy
+            vm.drawAgain()
+          }
+        }
       }
     },
     // 画布停止拖拽
@@ -465,6 +466,16 @@ export default {
           bezier = []
         }
       }
+      // if (vm.drawType === 'select') {
+      //   if (vm.select.index !== '') {
+      //     vm.saveDraw[vm.select.index].color = vm.select.color
+      //     console.log(vm.saveDraw[vm.select.index])
+      //     vm.select.position = []
+      //     vm.select.index = ''
+      //     vm.select.color = ''
+      //     vm.drawAgain()
+      //   }
+      // }
       vm.drageEvent.status = false
       distanceX = 0
       distanceY = 0
