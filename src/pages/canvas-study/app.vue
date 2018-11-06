@@ -78,7 +78,7 @@ function Rect (x, y, width, height, color, size) {
   this.color = color
   this.size = size
   this.select = (x0, y0) => {
-    if (x <= x0 && x0 <= x + width && y <= y0 && y0 <= y + height) {
+    if (this.x <= x0 && x0 <= this.x + this.width && this.y <= y0 && y0 <= this.y + this.height) {
       return true
     } else {
       return false
@@ -93,8 +93,8 @@ function Point (x, y, r, color) {
   this.r = r
   this.color = color
   this.select = (x0, y0) => {
-    let position = Math.pow(x0 - x, 2) + Math.pow(y0 - y, 2)
-    if (position <= Math.pow(r, 2)) {
+    let position = Math.pow(x0 - this.x, 2) + Math.pow(y0 - this.y, 2)
+    if (position <= Math.pow(this.r, 2)) {
       return true
     } else {
       return false
@@ -110,8 +110,8 @@ function Arc (x, y, r, color, size) {
   this.color = color
   this.size = size
   this.select = (x0, y0) => {
-    let position = Math.pow(x0 - x, 2) + Math.pow(y0 - y, 2)
-    if (position <= Math.pow(r, 2)) {
+    let position = Math.pow(x0 - this.x, 2) + Math.pow(y0 - this.y, 2)
+    if (position <= Math.pow(this.r, 2)) {
       return true
     } else {
       return false
@@ -128,8 +128,8 @@ function Ellipse (x, y, r1, r2, color, size) {
   this.color = color
   this.size = size
   this.select = (x0, y0) => {
-    let position1 = Math.pow(x0 - x, 2) / Math.pow(r1, 2)
-    let position2 = Math.pow(y0 - y, 2) / Math.pow(r2, 2)
+    let position1 = Math.pow(x0 - this.x, 2) / Math.pow(this.r1, 2)
+    let position2 = Math.pow(y0 - this.y, 2) / Math.pow(this.r2, 2)
     if (position1 + position2 <= 1) {
       return true
     } else {
